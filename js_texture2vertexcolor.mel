@@ -1,0 +1,44 @@
+// samples an assigned texture and applies it to vertex color
+{
+	// store the mesh
+	string $myMesh[] = `ls -sl`;
+	hyperShade -smn;
+	// store the material
+	string $material[] = `ls -sl`;
+	if (`size($material)` > 0)
+	{
+		// get the material texture
+		string $texture = `connectionInfo -sfd ($material[0] + ".color")`;
+		string $buffer[];
+		$numTokens = `tokenize $texture "." $buffer`;
+		if ($buffer[0] != "")
+		{
+			// get all faces on the mesh
+			int $facecount[] = `polyEvaluate -f $myMesh[0]`;
+			int $c;
+			// for each face
+			for ($c = 0; $c < $facecount[0]; $c++)
+			{	
+				select -r ($myMesh[0] + ".f[" + $c + "]");				
+				// get the uv mapping
+				$uvMap = `polyListComponentConversion -ff -tuv`;
+				// get the uv coordinates
+				float $uv[2] = `polyEditUV -q $uvMap`;
+				// sample the texture color at those coordinates
+				float $values[] = `colorAtPoint -o RGB -u $uv[0] -v $uv[1] $buffer[0]`;
+				// assign the color to the vertex color
+				polyColorPerVertex -rgb $values[0] $values[1] $values[2];
+			}
+			// assign the default material to the mesh
+			sets -e -forceElement initialShadingGroup $myMesh[0];
+		}
+		else
+		{
+			print("ERROR: No texture assigned to the material");
+		}
+	}
+	else
+	{
+		print("ERROR: Select your mesh with the assigned texture");	
+	}
+}
